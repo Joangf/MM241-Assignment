@@ -8,6 +8,10 @@ env = gym.make(
     "gym_cutting_stock/CuttingStock-v0",
     render_mode="human",  # Comment this line to disable rendering
 )
+if env.render_mode == "human":
+    import pygame
+    pygame.display.set_mode((800, 600), pygame.RESIZABLE)
+
 NUM_EPISODES = 100
 
 if __name__ == "__main__":
