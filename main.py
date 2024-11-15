@@ -10,7 +10,7 @@ env = gym.make(
 )
 if env.render_mode == "human":
     import pygame
-    pygame.display.set_mode((800, 600), pygame.RESIZABLE)
+    pygame.display.set_mode((600, 600), pygame.RESIZABLE)
 
 NUM_EPISODES = 100
 
