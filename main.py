@@ -61,8 +61,7 @@ if __name__ == "__main__":
     #     if truncated:
     #         observation, info = env.reset()
 
-    observation, info = env.reset(seed=42)
-    #print("Observation:", observation)
+
     with open('input.txt', 'w') as f:
         f.write(str(info) + '\n')
         total_items = sum(product["quantity"] for product in observation["products"])
