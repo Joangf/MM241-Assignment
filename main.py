@@ -1,7 +1,7 @@
 import gym_cutting_stock
 import gymnasium as gym
 from policy import GreedyPolicy, RandomPolicy
-from student_submissions.s2210xxx.policy2210xxx import Policy2210xxx, BendersDecompositionPolicy
+from student_submissions.s2210xxx.policy2210xxx import Policy2210xxx, BendersDecompositionPolicy,ISHP_Policy,ApproximationPolicy,KenyonRemilaPolicy,ConstraintProgrammingPolicy
 
 # Create the environment
 env = gym.make(
@@ -50,15 +50,37 @@ if __name__ == "__main__":
     # Reset the environment
     observation, info = env.reset(seed=42)
     print(info)
+    # policy2210xxx = Policy2210xxx()
+    # print(env.__str__)
+    # while True:
+    #     action = policy2210xxx.get_action(observation, info)
+    #     observation, reward, terminated, truncated, info = env.step(action)
+    #     print(info)
+    #     if terminated:
+    #         break
+    #     if truncated:
+    #         observation, info = env.reset()
 
+    observation, info = env.reset(seed=42)
+    #print("Observation:", observation)
+    with open('input.txt', 'w') as f:
+        f.write(str(info) + '\n')
+        total_items = sum(product["quantity"] for product in observation["products"])
+        f.write(f"SUM OF ITEM: {total_items}\n")
+        for product in observation["products"]:
+            f.write(f"Product {product['size']} - Remaining quantity: {product['quantity']}\n")
     policy2210xxx = Policy2210xxx()
-    for _ in range(200):
+    while True:
         action = policy2210xxx.get_action(observation, info)
+        print(f"Action: {action}")
         observation, reward, terminated, truncated, info = env.step(action)
         print(info)
+        for product in observation["products"]:
+            print(f"Product {product['size']} - Remaining quantity: {product['quantity']}")
 
-        if terminated or truncated:
+        if truncated:
             observation, info = env.reset()
-
+        if terminated:
+            break
 
 env.close()
