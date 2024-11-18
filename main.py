@@ -51,7 +51,6 @@ if __name__ == "__main__":
     observation, info = env.reset(seed=42)
     print(info)
     # policy2210xxx = Policy2210xxx()
-    # print(env.__str__)
     # while True:
     #     action = policy2210xxx.get_action(observation, info)
     #     observation, reward, terminated, truncated, info = env.step(action)
@@ -81,5 +80,6 @@ if __name__ == "__main__":
             observation, info = env.reset()
         if terminated:
             break
-
+screen = pygame.display.get_surface()
+pygame.image.save(screen, "result.png")
 env.close()
