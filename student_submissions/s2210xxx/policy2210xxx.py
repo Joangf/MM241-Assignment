@@ -183,7 +183,6 @@ class ApproximationPolicy(Policy):
                     best_pattern = self.solve_knapsack_problem(patterns, stock)
                     if best_pattern:
                         # Update the quantity and return the action
-                        prod["quantity"] -= 1
                         return {
                             "stock_idx": i,
                             "size": best_pattern["size"],

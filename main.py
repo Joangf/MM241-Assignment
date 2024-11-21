@@ -1,85 +1,44 @@
 import gym_cutting_stock
 import gymnasium as gym
 from policy import GreedyPolicy, RandomPolicy
-from student_submissions.s2210xxx.policy2210xxx import Policy2210xxx, BendersDecompositionPolicy,ISHP_Policy,ApproximationPolicy,KenyonRemilaPolicy,ConstraintProgrammingPolicy
-
+# Import here to test new policy
+from student_submissions.s2210xxx.policy2210xxx import Policy2210xxx
 # Create the environment
 env = gym.make(
     "gym_cutting_stock/CuttingStock-v0",
     render_mode="human",  # Comment this line to disable rendering
 )
-###########################################################
+# Make the window movable
 if env.render_mode == "human":
     import pygame
     pygame.display.set_mode((600, 600), pygame.RESIZABLE)
-###########################################################
-NUM_EPISODES = 100
-
 if __name__ == "__main__":
-    # Reset the environment
-    # observation, info = env.reset(seed=42)
-
-    # # Test GreedyPolicy
-    # gd_policy = GreedyPolicy()
-    # ep = 0
-    # while ep < NUM_EPISODES:
-    #     action = gd_policy.get_action(observation, info)
-    #     observation, reward, terminated, truncated, info = env.step(action)
-
-    #     if terminated or truncated:
-    #         observation, info = env.reset(seed=ep)
-    #         print(info)
-    #         ep += 1
-
-    # Reset the environment
-    # observation, info = env.reset(seed=42)
-
-    # # Test RandomPolicy
-    # rd_policy = RandomPolicy()
-    # ep = 0
-    # while ep < NUM_EPISODES:
-    #     action = rd_policy.get_action(observation, info)
-    #     observation, reward, terminated, truncated, info = env.step(action)
-
-    #     if terminated or truncated:
-    #         observation, info = env.reset(seed=ep)
-    #         print(info)
-    #         ep += 1
-
-    # Uncomment the following code to test your policy
     # Reset the environment
     observation, info = env.reset(seed=42)
     print(info)
-    # policy2210xxx = Policy2210xxx()
-    # while True:
-    #     action = policy2210xxx.get_action(observation, info)
-    #     observation, reward, terminated, truncated, info = env.step(action)
-    #     print(info)
-    #     if terminated:
-    #         break
-    #     if truncated:
-    #         observation, info = env.reset()
-
-
+    # Write products input to input.txt
     with open('input.txt', 'w') as f:
         f.write(str(info) + '\n')
         total_items = sum(product["quantity"] for product in observation["products"])
         f.write(f"SUM OF ITEM: {total_items}\n")
         for product in observation["products"]:
             f.write(f"Product {product['size']} - Remaining quantity: {product['quantity']}\n")
-    policy2210xxx = Policy2210xxx()
+    # Change this line to test your policy
+    policy2210xxx = GreedyPolicy()
     while True:
-        action = policy2210xxx.get_action(observation, info)
-        print(f"Action: {action}")
-        observation, reward, terminated, truncated, info = env.step(action)
-        print(info)
+        action = policy2210xxx.get_action(observation, info) # Get the action from the policy
+        observation, reward, terminated, truncated, info = env.step(action) # Take the action
+        print(f"Action: {action}") # Print the action taken by the policy
+        print(info) # Print the how much stock get used after taking the action
+        # Print the products and their remaining quantity after each action
         for product in observation["products"]:
             print(f"Product {product['size']} - Remaining quantity: {product['quantity']}")
-
+        # If the episode is truncated, reset the environment
         if truncated:
             observation, info = env.reset()
+        # If done cutting all the products, break the loop
         if terminated:
             break
-screen = pygame.display.get_surface()
-pygame.image.save(screen, "result.png")
+screen = pygame.display.get_surface()   # Get the screen surface
+pygame.image.save(screen, "result.png") # Save the last frame of the environment to result.png
 env.close()
