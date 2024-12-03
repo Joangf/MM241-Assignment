@@ -19,7 +19,7 @@ if env.render_mode == "human":
     pygame.display.set_mode((600, 600), pygame.RESIZABLE)
 if __name__ == "__main__":
     # Reset the environment
-    seed = 13620052
+    seed = 1391764
     np.random.seed(seed)
     observation, info = env.reset(seed=seed)
     np.random.seed(seed)
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     while True:
         action = policy2210xxx.get_action(observation, info) # Get the action from the policy
         observation, reward, terminated, truncated, info = env.step(action) # Take the action
-        print(f"Action: {action}") # Print the action taken by the policy
+        # print(f"Action: {action}") # Print the action taken by the policy
         # print(info) # Print the how much stock get used after taking the action
         # # Print the products and their remaining quantity after each action
         # for product in observation["products"]:

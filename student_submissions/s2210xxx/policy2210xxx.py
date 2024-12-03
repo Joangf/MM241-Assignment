@@ -41,9 +41,9 @@ class LP(Policy):
         # Construct the policy here
         if self.create:
             self.sorted_stocks = sorted(enumerate(observation["stocks"]), key=lambda x: self._get_stock_size_(x[1])[0] * self._get_stock_size_(x[1])[1], reverse=True)
-            self.sorted_prods = sorted(enumerate(observation["products"]), key=lambda x: x[1]["size"][0] * x[1]["size"][1], reverse=True)
+            self.sorted_prods = sorted(observation["products"], key=lambda x: x["size"][0] * x["size"][1], reverse=True)
             self.num_products = len(self.sorted_prods)   
-            self.prod_area = sum([prod[1]["size"][0] * prod[1]["size"][1] * prod[1]["quantity"] for prod in self.sorted_prods])
+            self.prod_area = sum([prod["size"][0] * prod["size"][1] * prod["quantity"] for prod in self.sorted_prods])
             for i in range(self.num_products):
                 counts = np.zeros(self.num_products, dtype=int)
                 counts[i] = 1
@@ -51,7 +51,7 @@ class LP(Policy):
                 self.current_patterns.append(pattern)
             self.create = False
         
-        demands_vector = np.array([prod[1]["quantity"] for prod in self.sorted_prods])
+        demands_vector = np.array([prod["quantity"] for prod in self.sorted_prods])
         self._solve_master_problem(demands_vector)
         x = self.master_solution
         pattern_idx = np.argmax(x)
@@ -63,7 +63,7 @@ class LP(Policy):
                 count = selected_pattern[i]
                 if count == 0:
                     continue
-                product = self.sorted_prods[i][1]
+                product = self.sorted_prods[i]
                 prod_w, prod_h = product["size"]
                 for x_pos in range(stock_w - prod_w + 1):
                     for y_pos in range(stock_h - prod_h + 1):
@@ -92,11 +92,11 @@ class mygreed(Policy):
     def get_action(self, observation, info):
         if self.create:
             self.sorted_stocks = sorted(enumerate(observation["stocks"]), key=lambda x: self._get_stock_size_(x[1])[0] * self._get_stock_size_(x[1])[1], reverse=True)
-            self.sorted_prods = sorted(enumerate(observation["products"]), key=lambda x: x[1]["size"][0] * x[1]["size"][1], reverse=True)
-            self.prod_area = sum([prod["size"][0] * prod["size"][1] * prod["quantity"] for prod in observation["products"]])
+            self.sorted_prods = sorted(observation["products"], key=lambda x: x["size"][0] * x["size"][1], reverse=True)
+            self.prod_area = sum([prod["size"][0] * prod["size"][1] * prod["quantity"] for prod in self.sorted_prods])
             self.create = False
         # Pick a product that has quality > 0
-        for _,prod in self.sorted_prods:
+        for prod in self.sorted_prods:
             if prod["quantity"] > 0:
                 prod_size = prod["size"]
 
@@ -129,7 +129,7 @@ class oneLP(Policy):
     def __init__(self):
         self.create = True
         self.current_patterns = []  # List of patterns
-        self.demands = None  # Current demands (list of products)
+        self.sorted_prods = None  # Current demands (list of products)
         self.sorted_stocks = None  # Sorted stocks by size
         self.num_products = 0
         self.master_solution = None  # Solution from master problem
@@ -159,18 +159,18 @@ class oneLP(Policy):
             raise ValueError("Cannot solve master problem.")
 
     def get_action(self, observation, info):
-        self.demands = observation["products"]
+        self.sorted_prods = observation["products"]
         # Construct the policy here
         if self.create:
-            self.prod_area = sum([prod["size"][0] * prod["size"][1] * prod["quantity"] for prod in self.demands])
-            self.num_products = len(self.demands)
+            self.prod_area = sum([prod["size"][0] * prod["size"][1] * prod["quantity"] for prod in self.sorted_prods])
+            self.num_products = len(self.sorted_prods)
             self.sorted_stocks = sorted(enumerate(observation["stocks"]), key=lambda x: self._get_stock_size_(x[1])[0] * self._get_stock_size_(x[1])[1], reverse=True)   
             for i in range(self.num_products):
                 counts = np.zeros(self.num_products, dtype=int)
                 counts[i] = 1
                 pattern = {"counts": counts,"sol": 0}  # Empty placements for now
                 self.current_patterns.append(pattern)
-            demands_vector = np.array([prod["quantity"] for prod in self.demands])
+            demands_vector = np.array([prod["quantity"] for prod in self.sorted_prods])
             self._solve_master_problem(demands_vector)
             x = self.master_solution
             for i in range(self.num_products):
@@ -195,7 +195,7 @@ class oneLP(Policy):
                 count = selected_pattern[i]
                 if count == 0:
                     continue
-                product = self.demands[i]
+                product = self.sorted_prods[i]
                 prod_w, prod_h = product["size"]
                 for x_pos in range(stock_w - prod_w + 1):
                     for y_pos in range(stock_h - prod_h + 1):
@@ -208,7 +208,7 @@ class myColumn(Policy):
         self.create = True
         self.current_patterns = []  # List of patterns
         self.selected_pattern = None
-        self.demands = None  # Current demands (list of products)
+        self.sorted_prods = None  # Current demands (list of products)
         self.sorted_stocks = None  # Sorted stocks by size
         self.num_products = 0
         self.dual_values = None  # Dual values from master problem
@@ -243,7 +243,7 @@ class myColumn(Policy):
 
     def create_intial_pattern(self):
         for i in range(self.num_products):
-            if self.demands[i]["quantity"] == 0:
+            if self.sorted_prods[i]["quantity"] == 0:
                 continue
             counts = np.zeros(self.num_products, dtype=int)
             counts[i] = 1
@@ -257,8 +257,8 @@ class myColumn(Policy):
         cvec *= -1
         A_ub = np.zeros((1, self.num_products))
         b_ub = [self.current_stock_size[0]*self.current_stock_size[1]]
-        bounds = [(0, prod["quantity"]) for prod in self.demands]
-        A_ub[0, :] = [prod["size"][0] * prod["size"][1]for prod in self.demands]
+        bounds = [(0, prod["quantity"]) for prod in self.sorted_prods]
+        A_ub[0, :] = [prod["size"][0] * prod["size"][1]for prod in self.sorted_prods]
         result = linprog(cvec, A_ub=A_ub, b_ub=b_ub, method="highs", bounds=bounds,integrality=True)
         self.current_patterns.append(np.int64(result["x"]))
 
@@ -269,7 +269,7 @@ class myColumn(Policy):
             stock_w, stock_h = self._get_stock_size_(stock)
             if(self.idx != -1 and self.selected_pattern[self.idx] != 0):
                 stock_w, stock_h = self._get_stock_size_(stock)
-                prod_w, prod_h = self.demands[self.idx]["size"]
+                prod_w, prod_h = self.sorted_prods[self.idx]["size"]
                 for x_pos in range(stock_w - prod_w + 1):
                     for y_pos in range(stock_h - prod_h + 1):
                         if self._can_place_(stock, (x_pos, y_pos), (prod_w, prod_h)):
@@ -285,10 +285,10 @@ class myColumn(Policy):
                             return {"stock_idx": stock_idx, "size": [prod_w, prod_h], "position": (x_pos, y_pos)}
             for i in range(self.num_products):
                 count = self.selected_pattern[i]
-                if count == 0 or self.demands[i]["quantity"] == 0:
+                if count == 0 or self.sorted_prods[i]["quantity"] == 0:
                     continue
                 self.idx = i
-                product = self.demands[i]
+                product = self.sorted_prods[i]
                 prod_w, prod_h = product["size"]
                 for x_pos in range(stock_w - prod_w + 1):
                     for y_pos in range(stock_h - prod_h + 1):
@@ -311,19 +311,20 @@ class myColumn(Policy):
             self.current_patterns = []
         if(self.selected_pattern is not None):
             return self.return_action()
-        self.demands = observation["products"]
+        self.sorted_prods = observation["products"]
         # Construct the policy here
         if self.create:
-            self.prod_area = sum([prod["size"][0] * prod["size"][1] * prod["quantity"] for prod in self.demands])
-            self.num_products = len(self.demands)
             self.sorted_stocks = sorted(enumerate(observation["stocks"]), key=lambda x: self._get_stock_size_(x[1])[0] * self._get_stock_size_(x[1])[1], reverse=True)
+            self.sorted_prods = sorted(observation["products"], key=lambda x: x["size"][0] * x["size"][1], reverse=True)
+            self.num_products = len(self.sorted_prods)   
+            self.prod_area = sum([prod["size"][0] * prod["size"][1] * prod["quantity"] for prod in self.sorted_prods])
             self.create = False
         
         if self.selected_pattern == None:
             self.stock_idx = 0
             self.current_stock_size = self._get_stock_size_(self.sorted_stocks[99][1])
             self.create_intial_pattern()
-            demands_vector = np.array([prod["quantity"] for prod in self.demands])
+            demands_vector = np.array([prod["quantity"] for prod in self.sorted_prods])
             for i in range(100):
                 self._solve_master_problem(demands_vector)
                 self.create_pattern(self.dual_values)
