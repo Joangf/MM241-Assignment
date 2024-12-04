@@ -19,7 +19,7 @@ if env.render_mode == "human":
     pygame.display.set_mode((600, 600), pygame.RESIZABLE)
 if __name__ == "__main__":
     # Reset the environment
-    seed = 1391764
+    seed = 811123
     np.random.seed(seed)
     observation, info = env.reset(seed=seed)
     np.random.seed(seed)
@@ -36,7 +36,10 @@ if __name__ == "__main__":
         for product in copobservation["products"]:
             f.write(f"Product {product['size']} - Remaining quantity: {product['quantity']}\n")
     # Change this line to test your policy
-    policy2210xxx = LP()
+    policy2210xxx = myColumn()
+    with open('stock.txt', 'w') as f:
+        for idx,stock in enumerate(observation["stocks"]):
+            f.write(f"{idx} - {policy2210xxx._get_stock_size_(stock)}\n")
     while True:
         action = policy2210xxx.get_action(observation, info) # Get the action from the policy
         observation, reward, terminated, truncated, info = env.step(action) # Take the action

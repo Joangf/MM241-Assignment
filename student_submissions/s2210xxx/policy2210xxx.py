@@ -215,7 +215,7 @@ class myColumn(Policy):
         self.master_solution = None  # Solution from master problem
         self.stock_idx = 0
         self.current_stock_size = None
-        self.idx = -1
+        self.prod_idx = 0
         self.used_stocks = []
         self.stock_area = 0
         self.prod_area = 0
@@ -247,10 +247,12 @@ class myColumn(Policy):
                 continue
             counts = np.zeros(self.num_products, dtype=int)
             counts[i] = 1
+            while self.sorted_prods[i]["size"][0] * self.sorted_prods[i]["size"][1] * counts[i] < self.current_stock_size[0] * self.current_stock_size[1]:
+                counts[i] += 1
             pattern = counts  # Empty placements for now
             self.current_patterns.append(pattern)
 
-    def create_pattern(self, dual_values = None):
+    def solve_subproblem(self, dual_values = None):
         cvec = dual_values
         if dual_values is None:
             cvec = np.ones(self.num_products)
@@ -263,17 +265,17 @@ class myColumn(Policy):
         self.current_patterns.append(np.int64(result["x"]))
 
     def return_action(self):
-        while True:
-            stock = self.sorted_stocks[self.stock_idx][1]
-            stock_idx = self.sorted_stocks[self.stock_idx][0]
-            stock_w, stock_h = self._get_stock_size_(stock)
-            if(self.idx != -1 and self.selected_pattern[self.idx] != 0):
+        for self.prod_idx in range(self.num_products):
+            count = min(self.selected_pattern[self.prod_idx], self.sorted_prods[self.prod_idx]["quantity"])
+            if count == 0:
+                continue
+            product = self.sorted_prods[self.prod_idx]
+            prod_w, prod_h = product["size"]
+            for stock_idx, stock in self.sorted_stocks:
                 stock_w, stock_h = self._get_stock_size_(stock)
-                prod_w, prod_h = self.sorted_prods[self.idx]["size"]
                 for x_pos in range(stock_w - prod_w + 1):
                     for y_pos in range(stock_h - prod_h + 1):
                         if self._can_place_(stock, (x_pos, y_pos), (prod_w, prod_h)):
-                            self.selected_pattern[self.idx] -= 1
                             is_used = False
                             for use in self.used_stocks:
                                 if use == stock_idx:
@@ -282,36 +284,17 @@ class myColumn(Policy):
                             if not is_used:
                                 self.stock_area += stock_w * stock_h
                                 self.used_stocks.append(stock_idx)
+                            self.selected_pattern[self.prod_idx] -= 1
                             return {"stock_idx": stock_idx, "size": [prod_w, prod_h], "position": (x_pos, y_pos)}
-            for i in range(self.num_products):
-                count = self.selected_pattern[i]
-                if count == 0 or self.sorted_prods[i]["quantity"] == 0:
-                    continue
-                self.idx = i
-                product = self.sorted_prods[i]
-                prod_w, prod_h = product["size"]
-                for x_pos in range(stock_w - prod_w + 1):
-                    for y_pos in range(stock_h - prod_h + 1):
-                        if self._can_place_(stock, (x_pos, y_pos), (prod_w, prod_h)):
-                            self.selected_pattern[i] -= 1
-                            is_used = False
-                            for use in self.used_stocks:
-                                if use == stock_idx:
-                                    is_used = True
-                                    break
-                            if not is_used:
-                                self.stock_area += stock_w * stock_h
-                                self.used_stocks.append(stock_idx)
-                            return {"stock_idx": stock_idx, "size": [prod_w, prod_h], "position": (x_pos, y_pos)}
-            self.stock_idx += 1
-        
+        self.selected_pattern = None
+        self.current_patterns = []
+        self.prod_idx = 0
+        return {"stock_idx": -1, "size": [0, 0], "position": (0, 0)}
+            
+                
     def get_action(self, observation, info):
-        if(self.selected_pattern is not None and np.sum(self.selected_pattern) == 0):
-            self.selected_pattern = None
-            self.current_patterns = []
         if(self.selected_pattern is not None):
             return self.return_action()
-        self.sorted_prods = observation["products"]
         # Construct the policy here
         if self.create:
             self.sorted_stocks = sorted(enumerate(observation["stocks"]), key=lambda x: self._get_stock_size_(x[1])[0] * self._get_stock_size_(x[1])[1], reverse=True)
@@ -322,17 +305,17 @@ class myColumn(Policy):
         
         if self.selected_pattern == None:
             self.stock_idx = 0
-            self.current_stock_size = self._get_stock_size_(self.sorted_stocks[99][1])
+            self.current_stock_size = self._get_stock_size_(self.sorted_stocks[0][1])
             self.create_intial_pattern()
             demands_vector = np.array([prod["quantity"] for prod in self.sorted_prods])
-            for i in range(100):
+            for _ in range(50):
                 self._solve_master_problem(demands_vector)
-                self.create_pattern(self.dual_values)
+                self.solve_subproblem(self.dual_values)
             
             x = self.master_solution
             pattern_idx = np.argmax(x)
             self.selected_pattern = self.current_patterns[pattern_idx]
-            print(self.selected_pattern) 
+            # print(self.selected_pattern) 
             return self.return_action()
         
     
