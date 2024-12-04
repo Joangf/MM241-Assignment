@@ -311,7 +311,7 @@ class myColumn(Policy):
             for _ in range(50):
                 self._solve_master_problem(demands_vector)
                 self.solve_subproblem(self.dual_values)
-            
+            self._solve_master_problem(demands_vector)
             x = self.master_solution
             pattern_idx = np.argmax(x)
             self.selected_pattern = self.current_patterns[pattern_idx]

@@ -19,7 +19,7 @@ if env.render_mode == "human":
     pygame.display.set_mode((600, 600), pygame.RESIZABLE)
 if __name__ == "__main__":
     # Reset the environment
-    seed = 811123
+    seed = 64454
     np.random.seed(seed)
     observation, info = env.reset(seed=seed)
     np.random.seed(seed)
