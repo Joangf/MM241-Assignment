@@ -248,8 +248,10 @@ class myColumn(Policy):
             counts = np.zeros(self.num_products, dtype=int)
             counts[i] = 1
             while self.sorted_prods[i]["size"][0] * self.sorted_prods[i]["size"][1] * counts[i] < self.current_stock_size[0] * self.current_stock_size[1]:
+                if self.sorted_prods[i]["quantity"] == counts[i]:
+                    break
                 counts[i] += 1
-            pattern = counts  # Empty placements for now
+            pattern = counts
             self.current_patterns.append(pattern)
 
     def solve_subproblem(self, dual_values = None):
@@ -262,7 +264,8 @@ class myColumn(Policy):
         bounds = [(0, prod["quantity"]) for prod in self.sorted_prods]
         A_ub[0, :] = [prod["size"][0] * prod["size"][1]for prod in self.sorted_prods]
         result = linprog(cvec, A_ub=A_ub, b_ub=b_ub, method="highs", bounds=bounds,integrality=True)
-        self.current_patterns.append(np.int64(result["x"]))
+        return np.int64(result["x"])
+        # self.current_patterns.append(np.int64(result["x"]))
 
     def return_action(self):
         for self.prod_idx in range(self.num_products):
@@ -308,13 +311,17 @@ class myColumn(Policy):
             self.current_stock_size = self._get_stock_size_(self.sorted_stocks[0][1])
             self.create_intial_pattern()
             demands_vector = np.array([prod["quantity"] for prod in self.sorted_prods])
-            for _ in range(50):
+            for _ in range(100):
                 self._solve_master_problem(demands_vector)
-                self.solve_subproblem(self.dual_values)
+                new_pattern = self.solve_subproblem(self.dual_values)
+                if(np.any(np.all(self.current_patterns == new_pattern, axis=1))):
+                    break
+                self.current_patterns.append(new_pattern)
             self._solve_master_problem(demands_vector)
             x = self.master_solution
             pattern_idx = np.argmax(x)
             self.selected_pattern = self.current_patterns[pattern_idx]
+            # print(self.current_patterns)
             # print(self.selected_pattern) 
             return self.return_action()
         
