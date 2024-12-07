@@ -2,7 +2,7 @@ import gym_cutting_stock
 import gymnasium as gym
 from policy import GreedyPolicy, RandomPolicy
 # Import here to test new policy
-from student_submissions.s2210xxx.policy2210xxx import ColumnGenerationPolicy,LP,mygreed,oneLP,myColumn
+from student_submissions.s2210xxx.policy2210xxx import ColumnGenerationPolicy,mygreed,myColumn
 import numpy as np
 # Create the environment
 env = gym.make(
@@ -50,10 +50,9 @@ if __name__ == "__main__":
         #     print(f"Product {product['size']} - Remaining quantity: {product['quantity']}")
         if terminated:
             print(info)
-            print("ratio:",policy2210xxx.stock_area/policy2210xxx.prod_area)
             break
     screen = pygame.display.get_surface()   # Get the screen surface
-    pygame.image.save(screen, "result.png") # Save the last frame of the environment to result.png
+    pygame.image.save(screen, "column.png") # Save the last frame of the environment to result.png
 
     greedy = mygreed()
     while True:
@@ -66,7 +65,6 @@ if __name__ == "__main__":
         #     print(f"Product {product['size']} - Remaining quantity: {product['quantity']}")
         if terminated:
             print(copinfo)
-            print("ratio:",greedy.stock_area/greedy.prod_area)
             break
     screen = pygame.display.get_surface()   # Get the screen surface
     pygame.image.save(screen, "greedy.png") # Save the last frame of the environment to greedy.png
